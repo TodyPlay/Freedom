@@ -1,11 +1,13 @@
 ﻿using System.IO;
 using System.Text;
+using Unity.Burst;
 using Unity.Mathematics;
 using UnityEngine;
 
 namespace Core.Saved
 {
     //玩家存档
+    [BurstCompile]
     public static class PlayerSaved
     {
         public static void Saving(in Content content)
@@ -13,9 +15,12 @@ namespace Core.Saved
             const string directoryPath = "Saving/Player";
             Directory.CreateDirectory(directoryPath);
 
-            using var fs = new FileStream($"{directoryPath}/{content.id}.json", FileMode.OpenOrCreate, FileAccess.Write);
+            using var fs = new FileStream($"{directoryPath}/{content.id}.json", FileMode.OpenOrCreate,
+                FileAccess.Write);
 
             var json = JsonUtility.ToJson(content);
+
+            Debug.Log(json);
 
             fs.Write(Encoding.UTF8.GetBytes(json));
         }
@@ -40,11 +45,13 @@ namespace Core.Saved
 
             var json = Encoding.UTF8.GetString(buffer, 0, len);
 
-            content = JsonUtility.FromJson<Content>(json);
+            Debug.Log(json);
 
+            content = JsonUtility.FromJson<Content>(json);
 
             return true;
         }
+
 
         //存档内容
         public struct Content

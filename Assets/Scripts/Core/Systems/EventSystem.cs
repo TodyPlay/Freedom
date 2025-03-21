@@ -1,13 +1,15 @@
 ﻿using Core.Components;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using UnityEngine;
 
 namespace Core.Systems
 {
+    [BurstCompile]
     [UpdateInGroup(typeof(LateSimulationSystemGroup))]
     public partial struct EventSystem : ISystem
     {
+        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             using var entityCommandBuffer = new EntityCommandBuffer(Allocator.Temp);

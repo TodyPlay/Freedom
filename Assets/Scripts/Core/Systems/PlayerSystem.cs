@@ -1,6 +1,7 @@
 ﻿using Authoring;
 using Core.Components;
 using Core.Saved;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -9,25 +10,15 @@ using Random = UnityEngine.Random;
 
 namespace Core.Systems
 {
+    [BurstCompile]
     public partial struct PlayerSystem : ISystem
     {
-        public static EntityArchetype archetype;
-
-        public void OnCreate(ref SystemState state)
-        {
-            archetype = state.EntityManager.CreateArchetype(
-                ComponentType.ReadWrite<Player>(),
-                ComponentType.ReadWrite<ActivePointer>(),
-                ComponentType.ReadWrite<LocalTransform>(),
-                ComponentType.ReadWrite<LocalToWorld>()
-            );
-        }
-
+        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (p, t) in SystemAPI.Query<RefRO<Player>, RefRW<LocalTransform>>())
+            foreach (var t in SystemAPI.Query<RefRW<LocalTransform>>().WithAll<Player>())
             {
-                t.ValueRW.Position = new float3(Random.value * 3, Random.value * 3, Random.value * 3);
+                // t.ValueRW.Position = new float3(Random.value * 32, Random.value * 32, Random.value * 32);
             }
         }
 
@@ -43,6 +34,7 @@ namespace Core.Systems
         }
     }
 
+    [BurstCompile]
     public partial class PlayerJoinSystem : SystemBase
     {
         protected override void OnCreate()
@@ -79,6 +71,7 @@ namespace Core.Systems
 
                     localTransform.Position = content.position;
                 }
+
                 var entity = ecb.Instantiate(gameSettings.playerPrefab);
 
                 ecb.AddComponent(entity, new Player
@@ -89,6 +82,7 @@ namespace Core.Systems
                 ecb.SetComponent(entity, localTransform);
 
                 ecb.AddComponent<ActivePointer>(entity);
+                ecb.AddComponent<MainActor>(entity);
 
             }
 

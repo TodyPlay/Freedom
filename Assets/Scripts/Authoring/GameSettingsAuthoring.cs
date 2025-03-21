@@ -19,7 +19,7 @@ namespace Authoring
 
         public string savingPath;
 
-        private class WordAuthoringBaker : Baker<GameSettingsAuthoring>
+        class WordAuthoringBaker : Baker<GameSettingsAuthoring>
         {
             public override void Bake(GameSettingsAuthoring authoring)
             {
