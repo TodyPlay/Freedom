@@ -8,6 +8,12 @@ namespace Core.Components
     {
     }
 
+    //应用的实体
+    public struct ChunkReference : IComponentData
+    {
+        public Entity entity;
+    }
+
     //方块元数据
     [Serializable]
     public class BlockMetadata

@@ -1,4 +1,5 @@
-﻿using Core.Components;
+﻿using Commons;
+using Core.Components;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -51,7 +52,9 @@ namespace Core.Systems
 
             using var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-            foreach (var (p, e) in SystemAPI.Query<RefRO<FrPosition>>().WithAll<Chunk>().WithEntityAccess())
+            foreach (var (p, e) in SystemAPI.Query<RefRO<FrPosition>>()
+                .WithAll<PendingTag, Chunk>()
+                .WithEntityAccess())
             {
                 if (positions.Contains(p.ValueRO.value))
                 {
@@ -59,7 +62,7 @@ namespace Core.Systems
                 }
                 else
                 {
-                    ecb.DestroyEntity(e);
+                    ecb.AddComponent<RemoveTag>(e);
                 }
 
             }
@@ -85,25 +88,86 @@ namespace Core.Systems
                     Rotation = quaternion.identity,
                     Scale = 1
                 });
-                
-                
 
-                using var builder = new BlobBuilder(Allocator.Temp);
-                ref var chunk = ref builder.ConstructRoot<BlocksInChunkBlob>();
-                builder.Allocate(ref chunk.entities, Chunk.SIZE_X * Chunk.SIZE_Z * Chunk.SIZE_Y);
-
-                var blobAssetReference = builder.CreateBlobAssetReference<BlocksInChunkBlob>(Allocator.Persistent);
 
                 ecb.SetComponent(entity, new BlocksInChunk
                 {
-                    entitiesRef = blobAssetReference
+                    entitiesRef = BlocksInChunkBlob.CreateReference()
                 });
+
+                ecb.AddComponent<StateFreshTag>(entity);
 
 
             }
 
             ecb.Playback(state.EntityManager);
 
+        }
+    }
+
+    [BurstCompile]
+    public partial struct ChunkInitializeSystem : ISystem
+    {
+        EntityArchetype m_blockArchetype;
+
+        public void OnCreate(ref SystemState state)
+        {
+            m_blockArchetype = state.EntityManager.CreateArchetype(FrArchetypes.Block);
+        }
+
+        public void OnUpdate(ref SystemState state)
+        {
+
+            using var ecb = new EntityCommandBuffer(Allocator.Temp);
+
+            foreach (var (blocksInChunk, e) in SystemAPI.Query<RefRW<BlocksInChunk>>().WithAll<StateFreshTag>()
+                .WithEntityAccess())
+            {
+                ecb.RemoveComponent<StateFreshTag>(e);
+                ecb.AddComponent<PendingTag>(e);
+
+                var length = blocksInChunk.ValueRW.entitiesRef.Value.entities.Length;
+
+                for (var i = 0; i < length; i++)
+                {
+                    var entity = ecb.CreateEntity(m_blockArchetype);
+                    ecb.AddComponent<StateFreshTag>(entity);
+                    ecb.SetComponent(entity, new FrPosition()
+                    {
+                        value = i.GetChunkPosition()
+                    });
+                    ecb.SetComponent(entity, new ChunkReference
+                    {
+                        entity = e
+                    });
+                }
+
+            }
+
+
+            var componentLookupBlockInChunk = SystemAPI.GetComponentLookup<BlocksInChunk>();
+            var componentLookupFrPosition = SystemAPI.GetComponentLookup<FrPosition>();
+
+
+            ecb.Playback(state.EntityManager);
+
+            foreach (var (block, frPosition, chunkReference, entity) in SystemAPI
+                .Query<RefRO<Block>, RefRW<FrPosition>, RefRO<ChunkReference>>()
+                .WithAll<StateFreshTag>().WithEntityAccess())
+            {
+                ecb.RemoveComponent<StateFreshTag>(entity);
+                ecb.AddComponent<PendingTag>(entity);
+                
+                var blocksInChunk = componentLookupBlockInChunk.GetRefRW(chunkReference.ValueRO.entity);
+                var chunkFrPosition = componentLookupFrPosition.GetRefRO(chunkReference.ValueRO.entity);
+                
+                //TODO 为 block 的 local transform赋值
+
+                blocksInChunk.ValueRW.entitiesRef.Value.entities[frPosition.ValueRO.IndexInChunk()].entity = entity;
+            }
+
+
+            ecb.Playback(state.EntityManager);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -10,6 +11,20 @@ using UnityEngine;
 
 namespace Core.Components
 {
+    
+    //标识Chunk待初始化，初始化完成后移除这个组件
+    public struct StateFreshTag : IComponentData
+    {
+    }
+
+    public struct RemoveTag : IComponentData
+    {
+    }
+
+    public struct PendingTag : IComponentData
+    {
+    }
+
     public struct FrPosition : IComponentData
     {
         public int3 value;
@@ -17,12 +32,17 @@ namespace Core.Components
 
     public static class FrArchetypes
     {
+        public static ReadOnlySpan<ComponentType> Block => new[]
+        {
+            ComponentType.ReadWrite<Block>(), ComponentType.ReadWrite<FrPosition>(),
+            ComponentType.ReadWrite<ChunkReference>(), ComponentType.ReadWrite<LocalToWorld>(),
+            ComponentType.ReadWrite<LocalTransform>(),
+        };
+
         public static ReadOnlySpan<ComponentType> Chunk => new[]
         {
-            ComponentType.ReadWrite<Chunk>(),
-            ComponentType.ReadWrite<FrPosition>(),
-            ComponentType.ReadWrite<LocalToWorld>(),
-            ComponentType.ReadWrite<LocalTransform>(),
+            ComponentType.ReadWrite<Chunk>(), ComponentType.ReadWrite<FrPosition>(),
+            ComponentType.ReadWrite<LocalToWorld>(), ComponentType.ReadWrite<LocalTransform>(),
             ComponentType.ReadWrite<BlocksInChunk>(),
         };
 
