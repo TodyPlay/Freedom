@@ -12,6 +12,11 @@ namespace Core.Components
     public struct ChunkReference : IComponentData
     {
         public Entity entity;
+
+        public static implicit operator ChunkReference(Entity entity)
+        {
+            return new ChunkReference { entity = entity };
+        }
     }
 
     //方块元数据

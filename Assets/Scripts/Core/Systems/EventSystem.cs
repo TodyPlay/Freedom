@@ -7,7 +7,7 @@ namespace Core.Systems
 {
     [BurstCompile]
     [UpdateInGroup(typeof(LateSimulationSystemGroup))]
-    public partial struct EventSystem : ISystem
+    public partial struct EventSystemRemove : ISystem
     {
         [BurstCompile]
         public void OnUpdate(ref SystemState state)

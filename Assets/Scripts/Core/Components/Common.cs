@@ -1,17 +1,12 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
-using Unity.Entities.Graphics;
 using Unity.Mathematics;
-using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 
 namespace Core.Components
 {
-    
     //标识Chunk待初始化，初始化完成后移除这个组件
     public struct StateFreshTag : IComponentData
     {
@@ -27,7 +22,61 @@ namespace Core.Components
 
     public struct FrPosition : IComponentData
     {
-        public int3 value;
+        public int x, y, z;
+
+        public static implicit operator LocalTransform(FrPosition position)
+        {
+            return new LocalTransform
+            {
+                Position = new float3(position.x, position.y, position.z),
+                Rotation = quaternion.identity,
+                Scale = 1f
+            };
+        }
+
+        public static implicit operator FrPosition(LocalTransform transform)
+        {
+            return new FrPosition()
+            {
+                x = Mathf.FloorToInt(transform.Position.x),
+                y = Mathf.FloorToInt(transform.Position.y),
+                z = Mathf.FloorToInt(transform.Position.z)
+            };
+        }
+
+        /// <summary>
+        /// index in chunk
+        /// </summary>
+        /// <param name="position">position in chunk</param>
+        /// <returns></returns>
+        public static implicit operator int(FrPosition position)
+        {
+            return position.x + position.z * Chunk.SIZE_X + position.y * Chunk.SIZE_X * Chunk.SIZE_Z;
+        }
+
+        /// <summary>
+        /// position in chunk
+        /// </summary>
+        /// <param name="indexInChunk">index in chunk</param>
+        /// <returns></returns>
+        public static implicit operator FrPosition(int indexInChunk)
+        {
+            var x = indexInChunk % Chunk.SIZE_X;
+            var z = indexInChunk / Chunk.SIZE_X % Chunk.SIZE_Z;
+            var y = indexInChunk / Chunk.SIZE_X / Chunk.SIZE_Z;
+
+            return new FrPosition { x = x, y = y, z = z };
+        }
+
+        public static implicit operator int3(FrPosition position)
+        {
+            return new int3 { x = position.x, y = position.y, z = position.z };
+        }
+
+        public static implicit operator FrPosition(int3 position)
+        {
+            return new FrPosition { x = position.x, y = position.y, z = position.z };
+        }
     }
 
     public static class FrArchetypes
@@ -36,7 +85,7 @@ namespace Core.Components
         {
             ComponentType.ReadWrite<Block>(), ComponentType.ReadWrite<FrPosition>(),
             ComponentType.ReadWrite<ChunkReference>(), ComponentType.ReadWrite<LocalToWorld>(),
-            ComponentType.ReadWrite<LocalTransform>(),
+            ComponentType.ReadWrite<LocalTransform>(), ComponentType.ReadWrite<Parent>()
         };
 
         public static ReadOnlySpan<ComponentType> Chunk => new[]

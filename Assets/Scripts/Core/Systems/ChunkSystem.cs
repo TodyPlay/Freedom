@@ -1,5 +1,4 @@
-﻿using Commons;
-using Core.Components;
+﻿using Core.Components;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -56,12 +55,13 @@ namespace Core.Systems
                 .WithAll<PendingTag, Chunk>()
                 .WithEntityAccess())
             {
-                if (positions.Contains(p.ValueRO.value))
+                if (positions.Contains(p.ValueRO))
                 {
-                    positions.Remove(p.ValueRO.value);
+                    positions.Remove(p.ValueRO);
                 }
                 else
                 {
+                    ecb.RemoveComponent<PendingTag>(e);
                     ecb.AddComponent<RemoveTag>(e);
                 }
 
@@ -74,26 +74,14 @@ namespace Core.Systems
             {
                 var entity = ecb.CreateEntity(archetype);
 
-                ecb.SetComponent(entity, new FrPosition
-                {
-                    value = position
-                });
+                ecb.SetComponent<FrPosition>(entity, position);
+                ecb.SetComponent<LocalTransform>(entity,(FrPosition)position);
 
-                ecb.SetComponent(entity, new LocalTransform
-                {
-                    Position = new float3
+                ecb.SetComponent(entity,
+                    new BlocksInChunk
                     {
-                        x = position.x * Chunk.SIZE_X, y = position.y, z = position.z * Chunk.SIZE_Z
-                    },
-                    Rotation = quaternion.identity,
-                    Scale = 1
-                });
-
-
-                ecb.SetComponent(entity, new BlocksInChunk
-                {
-                    entitiesRef = BlocksInChunkBlob.CreateReference()
-                });
+                        entitiesRef = BlocksInChunkBlob.CreateReference()
+                    });
 
                 ecb.AddComponent<StateFreshTag>(entity);
 
@@ -106,7 +94,7 @@ namespace Core.Systems
     }
 
     [BurstCompile]
-    public partial struct ChunkInitializeSystem : ISystem
+    public partial struct ChunkFreshSystem : ISystem
     {
         EntityArchetype m_blockArchetype;
 
@@ -120,54 +108,41 @@ namespace Core.Systems
 
             using var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-            foreach (var (blocksInChunk, e) in SystemAPI.Query<RefRW<BlocksInChunk>>().WithAll<StateFreshTag>()
+            foreach (var (c, e) in SystemAPI.Query<RefRW<Chunk>>().WithAll<StateFreshTag>()
                 .WithEntityAccess())
             {
                 ecb.RemoveComponent<StateFreshTag>(e);
                 ecb.AddComponent<PendingTag>(e);
-
-                var length = blocksInChunk.ValueRW.entitiesRef.Value.entities.Length;
-
-                for (var i = 0; i < length; i++)
-                {
-                    var entity = ecb.CreateEntity(m_blockArchetype);
-                    ecb.AddComponent<StateFreshTag>(entity);
-                    ecb.SetComponent(entity, new FrPosition()
-                    {
-                        value = i.GetChunkPosition()
-                    });
-                    ecb.SetComponent(entity, new ChunkReference
-                    {
-                        entity = e
-                    });
-                }
-
             }
 
-
-            var componentLookupBlockInChunk = SystemAPI.GetComponentLookup<BlocksInChunk>();
-            var componentLookupFrPosition = SystemAPI.GetComponentLookup<FrPosition>();
-
-
             ecb.Playback(state.EntityManager);
+        }
+    }
 
-            foreach (var (block, frPosition, chunkReference, entity) in SystemAPI
-                .Query<RefRO<Block>, RefRW<FrPosition>, RefRO<ChunkReference>>()
-                .WithAll<StateFreshTag>().WithEntityAccess())
+    [UpdateInGroup(typeof(LateSimulationSystemGroup))]
+    public partial struct ChunkRemoveSystem : ISystem
+    {
+        public void OnUpdate(ref SystemState state)
+        {
+            using var ecb = new EntityCommandBuffer(Allocator.Temp);
+
+            foreach (var (bic, entity) in SystemAPI.Query<RefRW<BlocksInChunk>>().WithAll<Chunk, RemoveTag>()
+                .WithEntityAccess())
             {
-                ecb.RemoveComponent<StateFreshTag>(entity);
-                ecb.AddComponent<PendingTag>(entity);
-                
-                var blocksInChunk = componentLookupBlockInChunk.GetRefRW(chunkReference.ValueRO.entity);
-                var chunkFrPosition = componentLookupFrPosition.GetRefRO(chunkReference.ValueRO.entity);
-                
-                //TODO 为 block 的 local transform赋值
-
-                blocksInChunk.ValueRW.entitiesRef.Value.entities[frPosition.ValueRO.IndexInChunk()].entity = entity;
+                ecb.DestroyEntity(entity);
+                bic.ValueRW.entitiesRef.Dispose();
             }
 
-
             ecb.Playback(state.EntityManager);
+        }
+
+        public void OnDestroy(ref SystemState state)
+        {
+            foreach (var (bic, entity) in SystemAPI.Query<RefRW<BlocksInChunk>>().WithAll<Chunk>()
+                .WithEntityAccess())
+            {
+                bic.ValueRW.entitiesRef.Dispose();
+            }
         }
     }
 }

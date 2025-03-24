@@ -9,8 +9,9 @@ namespace Core.Components
         public const int SIZE_X = 16;
         public const int SIZE_Y = 256;
         public const int SIZE_Z = 16;
-    }
 
+        public static int Length => SIZE_X * SIZE_Y * SIZE_Z;
+    }
 
 
     public struct BlocksInChunk : IComponentData
