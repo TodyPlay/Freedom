@@ -1,10 +1,11 @@
-﻿using Authoring;
-using Core.Components;
+﻿using Behaviours;
+using Client.Components;
 using Unity.Entities;
 using Unity.Transforms;
 
-namespace Core.Systems
+namespace Client.Systems
 {
+    [WorldSystemFilter(WorldSystemFilterFlags.ClientSimulation)]
     public partial class CameraSystem : SystemBase
     {
         protected override void OnCreate()

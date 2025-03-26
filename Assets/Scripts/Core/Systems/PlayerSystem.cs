@@ -1,4 +1,5 @@
 ﻿using Authoring;
+using Client.Components;
 using Core.Components;
 using Core.Saved;
 using Unity.Burst;

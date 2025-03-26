@@ -20,7 +20,7 @@ namespace Core.Systems
         public void OnUpdate(ref SystemState state)
         {
 
-            using var positions = new NativeHashSet<int3>(16, Allocator.Temp);
+            using var positions = new NativeHashSet<int3>(9, Allocator.Temp);
 
             foreach (var ltw in SystemAPI.Query<RefRO<LocalToWorld>>().WithAll<ActivePointer>())
             {
@@ -96,11 +96,9 @@ namespace Core.Systems
     [BurstCompile]
     public partial struct ChunkFreshSystem : ISystem
     {
-        EntityArchetype m_blockArchetype;
 
         public void OnCreate(ref SystemState state)
         {
-            m_blockArchetype = state.EntityManager.CreateArchetype(FrArchetypes.Block);
         }
 
         public void OnUpdate(ref SystemState state)
@@ -138,8 +136,7 @@ namespace Core.Systems
 
         public void OnDestroy(ref SystemState state)
         {
-            foreach (var (bic, entity) in SystemAPI.Query<RefRW<BlocksInChunk>>().WithAll<Chunk>()
-                .WithEntityAccess())
+            foreach (var bic in SystemAPI.Query<RefRW<BlocksInChunk>>().WithAll<Chunk>())
             {
                 bic.ValueRW.entitiesRef.Dispose();
             }

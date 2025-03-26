@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Authoring
+namespace Behaviours
 {
     public class CameraHolder : MonoBehaviour
     {

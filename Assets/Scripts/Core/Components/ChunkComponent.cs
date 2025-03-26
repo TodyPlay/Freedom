@@ -21,14 +21,14 @@ namespace Core.Components
 
     public struct BlocksInChunkBlob
     {
-        public BlobArray<BlockInChunkProvider> entities;
+        public BlobArray<BlockInChunkProvider> blockProviders;
 
 
         public static BlobAssetReference<BlocksInChunkBlob> CreateReference()
         {
             using var builder = new BlobBuilder(Allocator.Temp);
             ref var blocksInChunkBlob = ref builder.ConstructRoot<BlocksInChunkBlob>();
-            builder.Allocate(ref blocksInChunkBlob.entities, Chunk.SIZE_X * Chunk.SIZE_Z * Chunk.SIZE_Y);
+            builder.Allocate(ref blocksInChunkBlob.blockProviders, Chunk.SIZE_X * Chunk.SIZE_Z * Chunk.SIZE_Y);
 
             blocksInChunkBlob.Initialize();
 
@@ -38,9 +38,9 @@ namespace Core.Components
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void Initialize()
         {
-            for (var i = 0; i < entities.Length; i++)
+            for (var i = 0; i < blockProviders.Length; i++)
             {
-                entities[i] = new BlockInChunkProvider
+                blockProviders[i] = new BlockInChunkProvider
                 {
                     indexInChunk = i, entity = Entity.Null
                 };
