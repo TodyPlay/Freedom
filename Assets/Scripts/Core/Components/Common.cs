@@ -2,6 +2,7 @@
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.NetCode;
 using Unity.Transforms;
 using UnityEngine;
 
@@ -21,17 +22,17 @@ namespace Core.Components
 
     public struct ChunkPosition : IComponentData
     {
-        public int x, z;
+        [GhostField] public int x, z;
     }
 
     public struct BlockPosition : IComponentData
     {
-        public int x, y, z;
+        [GhostField] public int x, y, z;
     }
 
     public struct FrPosition : IComponentData
     {
-        public int x, y, z;
+        [GhostField] public int x, y, z;
 
         public static implicit operator LocalTransform(FrPosition position)
         {
