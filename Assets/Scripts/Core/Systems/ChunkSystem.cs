@@ -83,7 +83,7 @@ namespace Core.Systems
                         entitiesRef = BlocksInChunkBlob.CreateReference()
                     });
 
-                ecb.AddComponent<StateFreshTag>(entity);
+                ecb.AddComponent<FreshTag>(entity);
 
 
             }
@@ -106,10 +106,10 @@ namespace Core.Systems
 
             using var ecb = new EntityCommandBuffer(Allocator.Temp);
 
-            foreach (var (c, e) in SystemAPI.Query<RefRW<Chunk>>().WithAll<StateFreshTag>()
+            foreach (var (c, e) in SystemAPI.Query<RefRW<Chunk>>().WithAll<FreshTag>()
                 .WithEntityAccess())
             {
-                ecb.RemoveComponent<StateFreshTag>(e);
+                ecb.RemoveComponent<FreshTag>(e);
                 ecb.AddComponent<PendingTag>(e);
             }
 

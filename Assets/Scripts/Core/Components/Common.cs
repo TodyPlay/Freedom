@@ -7,8 +7,7 @@ using UnityEngine;
 
 namespace Core.Components
 {
-    //标识Chunk待初始化，初始化完成后移除这个组件
-    public struct StateFreshTag : IComponentData
+    public struct FreshTag : IComponentData
     {
     }
 

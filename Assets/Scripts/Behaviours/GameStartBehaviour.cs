@@ -1,7 +1,6 @@
 ﻿using Unity.Entities;
 using UnityEngine;
 using UnityEngine.UI;
-using TestingSystem = Test.TestingSystem;
 using WorldFlags = Unity.Entities.WorldFlags;
 
 namespace Behaviours
